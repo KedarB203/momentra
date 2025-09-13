@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import ImageCarousel from "@/components/ImageCarousel";
+import StoriesViewer from "@/components/StoriesViewer";
 import { supabase, type DayRecord } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -62,8 +62,8 @@ export default function Home() {
 						Today's Moments
 					</h1>
 					<p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-						Experience the beauty of life through carefully curated images and
-						ambient sounds
+						Immerse yourself in life's moments through an interactive story-like experience
+						with curated visuals and ambient sounds
 					</p>
 				</div>
 
@@ -87,9 +87,10 @@ export default function Home() {
 						</Card>
 					</div>
 				) : dayData ? (
-					<ImageCarousel
+					<StoriesViewer
 						images={dayData.image_urls}
 						musicUrl={dayData.music_url}
+						autoAdvanceTime={4000}
 					/>
 				) : null}
 
@@ -100,9 +101,9 @@ export default function Home() {
 								Immerse Yourself
 							</h2>
 							<p className="text-muted-foreground">
-								Let the ambient music transport you while beautiful imagery
-								creates a moment of peace and reflection. Each day brings new
-								visual stories and soundscapes to discover.
+								Tap to navigate, hold to pause, and let the ambient music transport you 
+								through beautiful imagery. Each story unfolds at your pace, creating 
+								moments of peace and reflection.
 							</p>
 						</CardContent>
 					</Card>
