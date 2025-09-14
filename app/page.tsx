@@ -13,9 +13,11 @@ export default function Home() {
 	const [error, setError] = useState<string | null>(null);
 
 	// Function to process photos and add card images before each photo
-	const processPhotosWithCards = (originalPhotos: PhotoRecord[]): PhotoRecord[] => {
+	const processPhotosWithCards = (
+		originalPhotos: PhotoRecord[]
+	): PhotoRecord[] => {
 		const processedPhotos: PhotoRecord[] = [];
-		
+
 		originalPhotos.forEach((photo, index) => {
 			// Add a card image before each photo
 			const cardPhoto: PhotoRecord = {
@@ -23,13 +25,13 @@ export default function Home() {
 				image_url: getRandomCardImage(),
 				music_url: photo.music_url, // Use the same music as the following photo
 				card_image: getRandomCardImage(),
-				created_at: photo.created_at
+				created_at: photo.created_at,
 			};
-			
+
 			processedPhotos.push(cardPhoto);
 			processedPhotos.push(photo);
 		});
-		
+
 		return processedPhotos;
 	};
 
@@ -101,45 +103,46 @@ export default function Home() {
 			<div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-br from-background via-background to-accent/5"></div>
 			{/* Content wrapper */}
 			<div className="relative z-10 flex flex-col min-h-screen">
-			<Header />
+				<Header />
 
-			<main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-				{loading ? (
-					<div className="flex justify-center items-center h-96">
-						<Card className="w-full max-w-md">
-							<CardContent className="flex flex-col items-center justify-center p-8">
-								<div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-								<p className="text-muted-foreground">
-									Loading today&apos;s moments...
-								</p>
-							</CardContent>
-						</Card>
-					</div>
-				) : error ? (
-					<div className="flex justify-center items-center h-96">
-						<Card className="w-full max-w-md border-destructive/50">
-							<CardContent className="flex flex-col items-center justify-center p-8">
-								<p className="text-destructive text-center">{error}</p>
-							</CardContent>
-						</Card>
-					</div>
-				) : photos.length > 0 ? (
-					<>
-						{/* Gleeful header text */}
-						<div className="text-center mb-8">
-							<h1 className="text-3xl md:text-4xl font-bold text-primary mb-2">
-							Tinu's Daily  Chronicles :p
-							</h1>
-							<p className="text-sm md:text-base text-muted-foreground mt-2 italic">
-								Warning: May contain excessive amounts of awesomeness and spontaneous smiling 😄
-							</p>
+				<main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+					{loading ? (
+						<div className="flex justify-center items-center h-96">
+							<Card className="w-full max-w-md">
+								<CardContent className="flex flex-col items-center justify-center p-8">
+									<div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+									<p className="text-muted-foreground">
+										Loading today&apos;s moments...
+									</p>
+								</CardContent>
+							</Card>
 						</div>
-						<StoriesViewer photos={photos} autoAdvanceTime={4000} />
-					</>
-				) : null}
-			</main>
+					) : error ? (
+						<div className="flex justify-center items-center h-96">
+							<Card className="w-full max-w-md border-destructive/50">
+								<CardContent className="flex flex-col items-center justify-center p-8">
+									<p className="text-destructive text-center">{error}</p>
+								</CardContent>
+							</Card>
+						</div>
+					) : photos.length > 0 ? (
+						<>
+							{/* Gleeful header text */}
+							<div className="text-center mb-8">
+								<h1 className="text-3xl md:text-4xl font-bold text-primary mb-2">
+									Tinu&apos;s Daily Chronicles :p
+								</h1>
+								<p className="text-sm md:text-base text-muted-foreground mt-2 italic">
+									Warning: May contain excessive amounts of awesomeness and
+									spontaneous smiling 😄
+								</p>
+							</div>
+							<StoriesViewer photos={photos} autoAdvanceTime={4000} />
+						</>
+					) : null}
+				</main>
 
-			<Footer />
+				<Footer />
 			</div>
 		</div>
 	);
