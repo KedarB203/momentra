@@ -267,7 +267,7 @@ export default function StoriesViewer({
 			ref={containerRef}
 			className={`relative ${isFullscreen ? 'w-screen h-screen' : 'w-full max-w-md mx-auto'}`}
 		>
-			<div className={`overflow-hidden border-0 ${isFullscreen ? 'rounded-none h-full' : 'rounded-lg'}`}>
+			<div className={`overflow-hidden border-0 ${isFullscreen ? 'rounded-none h-full' : 'rounded-lg shadow-xl'}`}>
 				<div className="relative">
 					{/* Progress indicators */}
 					<div className="absolute top-0 left-0 right-0 z-20 flex gap-1 p-4">
