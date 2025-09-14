@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Volume2, VolumeX, Maximize, Minimize } from "lucide-react";
+import { Play, Volume2, VolumeX, Maximize, Minimize, Share, RotateCcw } from "lucide-react";
 
 // Typewriter component for animated text
 interface TypewriterTextProps {
@@ -100,6 +100,7 @@ export default function StoriesViewer({
 	const [progress, setProgress] = useState(0);
 	const [isTransitioning, setIsTransitioning] = useState(false);
 	const [isFullscreen, setIsFullscreen] = useState(false);
+	const [isFinished, setIsFinished] = useState(false);
 
 	const audioRef = useRef<HTMLAudioElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -132,17 +133,30 @@ export default function StoriesViewer({
 	useEffect(() => {
 		if (photos.length > 0 && audioRef.current) {
 			const currentPhoto = photos[currentIndex];
-			audioRef.current.src = currentPhoto.music_url;
+			const newMusicUrl = currentPhoto.music_url;
+			
+			// Only change music source if it's different from current
+			if (audioRef.current.src !== newMusicUrl) {
+				audioRef.current.src = newMusicUrl;
 			audioRef.current.load();
 
-			// Try to play the new track
+				// Start playing music for both cards and photos
 			if (!isMuted) {
 				audioRef.current.play().catch((error) => {
-					console.log("Failed to play new track:", error);
-				});
+						console.log("Failed to play track:", error);
+					});
+				}
+			} else {
+				// Same music source, just ensure it's playing if not muted
+				if (!isMuted && audioRef.current.paused) {
+					audioRef.current.play().catch((error) => {
+						console.log("Failed to resume track:", error);
+					});
+				}
 			}
 		}
 	}, [currentIndex, photos, isMuted]);
+
 
 	// Progress tracking
 	const startProgress = useCallback(() => {
@@ -206,14 +220,22 @@ export default function StoriesViewer({
 	const goToNext = useCallback(() => {
 		if (isTransitioning) return;
 
+		// Check if we're at the last photo
+		if (currentIndex === photos.length - 1) {
+			setIsFinished(true);
+			setIsPaused(true);
+			stopProgress();
+			return;
+		}
+
 		setIsTransitioning(true);
 		stopProgress();
 
 		setTimeout(() => {
-			setCurrentIndex((prev) => (prev + 1) % photos.length);
+			setCurrentIndex((prev) => prev + 1);
 			setIsTransitioning(false);
 		}, 150);
-	}, [photos.length, isTransitioning, stopProgress]);
+	}, [photos.length, isTransitioning, stopProgress, currentIndex]);
 
 	const goToPrevious = useCallback(() => {
 		if (isTransitioning) return;
@@ -249,14 +271,14 @@ export default function StoriesViewer({
 
 	// Auto-advance logic
 	useEffect(() => {
-		if (!isPaused && !isTransitioning) {
+		if (!isPaused && !isTransitioning && !isFinished) {
 			startProgress();
 		}
 
 		return () => {
 			stopProgress();
 		};
-	}, [currentIndex, isPaused, isTransitioning, startProgress, stopProgress]);
+	}, [currentIndex, isPaused, isTransitioning, isFinished, startProgress, stopProgress]);
 
 	const toggleMute = () => {
 		if (audioRef.current) {
@@ -281,75 +303,108 @@ export default function StoriesViewer({
 
 		try {
 			if (!isFullscreen) {
-				// Enter fullscreen
-				if (containerRef.current.requestFullscreen) {
-					await containerRef.current.requestFullscreen();
-				} else {
-					const element = containerRef.current as unknown as {
-						webkitRequestFullscreen?: () => Promise<void>;
-						msRequestFullscreen?: () => Promise<void>;
-					};
-
-					if (element.webkitRequestFullscreen) {
+				// Enter fullscreen - try different APIs for mobile compatibility
+				const element = containerRef.current as any;
+				
+				if (element.requestFullscreen) {
+					await element.requestFullscreen();
+				} else if (element.webkitRequestFullscreen) {
+					// Safari
 						await element.webkitRequestFullscreen();
+				} else if (element.webkitRequestFullScreen) {
+					// Older Safari (capital S)
+					await element.webkitRequestFullScreen();
+				} else if (element.mozRequestFullScreen) {
+					// Firefox
+					await element.mozRequestFullScreen();
 					} else if (element.msRequestFullscreen) {
+					// IE/Edge
 						await element.msRequestFullscreen();
+				} else {
+					// Fallback for mobile browsers that don't support fullscreen API
+					console.log("Fullscreen API not supported, using viewport fullscreen");
+					setIsFullscreen(true);
+					
+					// Hide address bar on mobile by scrolling
+					if (window.innerHeight < window.outerHeight) {
+						setTimeout(() => {
+							window.scrollTo(0, 1);
+						}, 100);
 					}
 				}
 			} else {
 				// Exit fullscreen
-				if (document.exitFullscreen) {
-					await document.exitFullscreen();
-				} else {
-					const doc = document as unknown as {
-						webkitExitFullscreen?: () => Promise<void>;
-						msExitFullscreen?: () => Promise<void>;
-					};
-
-					if (doc.webkitExitFullscreen) {
+				const doc = document as any;
+				
+				if (doc.exitFullscreen) {
+					await doc.exitFullscreen();
+				} else if (doc.webkitExitFullscreen) {
 						await doc.webkitExitFullscreen();
+				} else if (doc.webkitCancelFullScreen) {
+					// Older Safari
+					await doc.webkitCancelFullScreen();
+				} else if (doc.mozCancelFullScreen) {
+					// Firefox
+					await doc.mozCancelFullScreen();
 					} else if (doc.msExitFullscreen) {
+					// IE/Edge
 						await doc.msExitFullscreen();
-					}
+				} else {
+					// Fallback for browsers without fullscreen API
+					setIsFullscreen(false);
 				}
 			}
 		} catch (error) {
 			console.log("Fullscreen toggle failed:", error);
+			// Fallback: toggle fullscreen state manually
+			setIsFullscreen(!isFullscreen);
 		}
 	};
 
 	// Listen for fullscreen changes
 	useEffect(() => {
 		const handleFullscreenChange = () => {
-			const doc = document as unknown as {
-				webkitFullscreenElement?: Element | null;
-				msFullscreenElement?: Element | null;
-			};
+			const doc = document as any;
 
 			const isCurrentlyFullscreen = !!(
-				document.fullscreenElement ||
+				doc.fullscreenElement ||
 				doc.webkitFullscreenElement ||
+				doc.webkitCurrentFullScreenElement ||
+				doc.mozFullScreenElement ||
 				doc.msFullscreenElement
 			);
 			setIsFullscreen(isCurrentlyFullscreen);
 		};
 
+		// Add event listeners for all browser variants
 		document.addEventListener("fullscreenchange", handleFullscreenChange);
 		document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+		document.addEventListener("mozfullscreenchange", handleFullscreenChange);
 		document.addEventListener("msfullscreenchange", handleFullscreenChange);
+
+		// Handle orientation changes on mobile
+		const handleOrientationChange = () => {
+			// Small delay to let orientation change complete
+			setTimeout(() => {
+				if (isFullscreen) {
+					// Ensure we maintain fullscreen-like behavior
+					window.scrollTo(0, 1);
+				}
+			}, 500);
+		};
+
+		window.addEventListener("orientationchange", handleOrientationChange);
+		window.addEventListener("resize", handleOrientationChange);
 
 		return () => {
 			document.removeEventListener("fullscreenchange", handleFullscreenChange);
-			document.removeEventListener(
-				"webkitfullscreenchange",
-				handleFullscreenChange
-			);
-			document.removeEventListener(
-				"msfullscreenchange",
-				handleFullscreenChange
-			);
+			document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+			document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
+			document.removeEventListener("msfullscreenchange", handleFullscreenChange);
+			window.removeEventListener("orientationchange", handleOrientationChange);
+			window.removeEventListener("resize", handleOrientationChange);
 		};
-	}, []);
+	}, [isFullscreen]);
 
 	const togglePause = () => {
 		setIsPaused(!isPaused);
@@ -358,6 +413,18 @@ export default function StoriesViewer({
 		} else {
 			pauseProgress();
 		}
+	};
+
+	const handleReplay = () => {
+		setCurrentIndex(0);
+		setIsFinished(false);
+		setIsPaused(false);
+		setProgress(0);
+	};
+
+	const handleShare = () => {
+		// Purely visual for now - no functionality
+		console.log("Share button clicked (visual only)");
 	};
 
 	// Touch/click handlers
@@ -390,8 +457,14 @@ export default function StoriesViewer({
 		<div
 			ref={containerRef}
 			className={`relative ${
-				isFullscreen ? "w-screen h-screen" : "w-full max-w-md mx-auto"
+				isFullscreen ? "w-screen h-screen fixed inset-0 z-50" : "w-full max-w-md mx-auto"
 			}`}
+			style={{
+				...(isFullscreen && {
+					minHeight: '100dvh', // Dynamic viewport height for mobile (fallback to 100vh)
+					height: '100dvh',
+				})
+			}}
 		>
 			<div
 				className={`overflow-hidden border-0 ${
@@ -493,10 +566,37 @@ export default function StoriesViewer({
 						</div>
 
 						{/* Pause indicator */}
-						{isPaused && (
+						{isPaused && !isFinished && (
 							<div className="absolute inset-0 flex items-center justify-center z-15 bg-black/20">
 								<div className="bg-black/60 rounded-full p-4">
 									<Play className="h-8 w-8 text-white ml-1" />
+								</div>
+							</div>
+						)}
+
+						{/* Finished state - Share and Replay buttons */}
+						{isFinished && (
+							<div className="absolute inset-0 flex items-center justify-center z-15 bg-black/40 backdrop-blur-sm">
+								<div className="flex flex-col items-center space-y-4">
+									<div className="text-white text-4xl font-bold mb-4">
+										That's a wrap! 🎬
+									</div>
+									<div className="flex space-x-4">
+										<Button
+											onClick={handleReplay}
+											className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border border-white/30 px-6 py-3 rounded-full flex items-center space-x-2"
+										>
+											<RotateCcw className="h-5 w-5" />
+											<span>Replay</span>
+										</Button>
+										<Button
+											onClick={handleShare}
+											className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border border-white/30 px-6 py-3 rounded-full flex items-center space-x-2"
+										>
+											<Share className="h-5 w-5" />
+											<span>Share</span>
+										</Button>
+									</div>
 								</div>
 							</div>
 						)}
