@@ -1,16 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
 	Play,
-	Pause,
 	Volume2,
 	VolumeX,
-	SkipForward,
-	SkipBack,
-	X,
+	Maximize,
+	Minimize,
 } from "lucide-react";
 
 interface StoriesViewerProps {
@@ -25,22 +22,36 @@ export default function StoriesViewer({
 	autoAdvanceTime = 5000,
 }: StoriesViewerProps) {
 	const [currentIndex, setCurrentIndex] = useState(0);
-	const [isPlaying, setIsPlaying] = useState(false);
 	const [isPaused, setIsPaused] = useState(false);
 	const [isMuted, setIsMuted] = useState(false);
 	const [progress, setProgress] = useState(0);
 	const [isTransitioning, setIsTransitioning] = useState(false);
+	const [isFullscreen, setIsFullscreen] = useState(false);
 
 	const audioRef = useRef<HTMLAudioElement>(null);
+	const containerRef = useRef<HTMLDivElement>(null);
 	const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 	const autoAdvanceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const startTimeRef = useRef<number>(0);
 
-	// Initialize audio
+	// Initialize audio and start playing by default
 	useEffect(() => {
 		if (audioRef.current) {
 			audioRef.current.loop = true;
 			audioRef.current.volume = 0.6;
+			audioRef.current.muted = false;
+			// Try to start playing audio unmuted
+			audioRef.current.play().catch((error) => {
+				console.log('Unmuted autoplay prevented, trying muted:', error);
+				// If unmuted autoplay fails, try with muted
+				if (audioRef.current) {
+					audioRef.current.muted = true;
+					audioRef.current.play().catch((mutedError) => {
+						console.log('All autoplay prevented:', mutedError);
+						setIsMuted(true);
+					});
+				}
+			});
 		}
 	}, []);
 
@@ -114,10 +125,15 @@ export default function StoriesViewer({
 		stopProgress();
 		
 		setTimeout(() => {
-			setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+			// If on first story (index 0), stay on first story
+			if (currentIndex === 0) {
+				setCurrentIndex(0);
+			} else {
+				setCurrentIndex((prev) => prev - 1);
+			}
 			setIsTransitioning(false);
 		}, 150);
-	}, [images.length, isTransitioning, stopProgress]);
+	}, [currentIndex, isTransitioning, stopProgress]);
 
 	const goToStory = useCallback((index: number) => {
 		if (isTransitioning || index === currentIndex) return;
@@ -142,27 +158,74 @@ export default function StoriesViewer({
 		};
 	}, [currentIndex, isPaused, isTransitioning, startProgress, stopProgress]);
 
-	// Audio controls
-	const togglePlayPause = () => {
-		if (audioRef.current) {
-			if (isPlaying) {
-				audioRef.current.pause();
-				setIsPaused(true);
-				pauseProgress();
-			} else {
-				audioRef.current.play();
-				setIsPaused(false);
-			}
-			setIsPlaying(!isPlaying);
-		}
-	};
 
 	const toggleMute = () => {
 		if (audioRef.current) {
-			audioRef.current.muted = !isMuted;
-			setIsMuted(!isMuted);
+			if (isMuted) {
+				// Unmute and play
+				audioRef.current.muted = false;
+				audioRef.current.play().catch((error) => {
+					console.log('Play failed:', error);
+				});
+				setIsMuted(false);
+			} else {
+				// Mute and pause
+				audioRef.current.pause();
+				audioRef.current.muted = true;
+				setIsMuted(true);
+			}
 		}
 	};
+
+	const toggleFullscreen = async () => {
+		if (!containerRef.current) return;
+
+		try {
+			if (!isFullscreen) {
+				// Enter fullscreen
+				if (containerRef.current.requestFullscreen) {
+					await containerRef.current.requestFullscreen();
+				} else if ((containerRef.current as any).webkitRequestFullscreen) {
+					await (containerRef.current as any).webkitRequestFullscreen();
+				} else if ((containerRef.current as any).msRequestFullscreen) {
+					await (containerRef.current as any).msRequestFullscreen();
+				}
+			} else {
+				// Exit fullscreen
+				if (document.exitFullscreen) {
+					await document.exitFullscreen();
+				} else if ((document as any).webkitExitFullscreen) {
+					await (document as any).webkitExitFullscreen();
+				} else if ((document as any).msExitFullscreen) {
+					await (document as any).msExitFullscreen();
+				}
+			}
+		} catch (error) {
+			console.log('Fullscreen toggle failed:', error);
+		}
+	};
+
+	// Listen for fullscreen changes
+	useEffect(() => {
+		const handleFullscreenChange = () => {
+			const isCurrentlyFullscreen = !!(
+				document.fullscreenElement ||
+				(document as any).webkitFullscreenElement ||
+				(document as any).msFullscreenElement
+			);
+			setIsFullscreen(isCurrentlyFullscreen);
+		};
+
+		document.addEventListener('fullscreenchange', handleFullscreenChange);
+		document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+		document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+		return () => {
+			document.removeEventListener('fullscreenchange', handleFullscreenChange);
+			document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+			document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+		};
+	}, []);
 
 	const togglePause = () => {
 		setIsPaused(!isPaused);
@@ -200,9 +263,12 @@ export default function StoriesViewer({
 	}, [stopProgress]);
 
 	return (
-		<div className="relative w-full max-w-md mx-auto">
-			<Card className="overflow-hidden border-0 shadow-2xl bg-black">
-				<CardContent className="p-0 relative">
+		<div 
+			ref={containerRef}
+			className={`relative ${isFullscreen ? 'w-screen h-screen' : 'w-full max-w-md mx-auto'}`}
+		>
+			<div className={`overflow-hidden border-0 ${isFullscreen ? 'rounded-none h-full' : 'rounded-lg'}`}>
+				<div className="relative">
 					{/* Progress indicators */}
 					<div className="absolute top-0 left-0 right-0 z-20 flex gap-1 p-4">
 						{images.map((_, index) => (
@@ -227,7 +293,7 @@ export default function StoriesViewer({
 
 					{/* Main story content */}
 					<div 
-						className="relative h-[80vh] min-h-[600px] overflow-hidden cursor-pointer select-none"
+						className={`relative ${isFullscreen ? 'h-screen' : 'h-[80vh] min-h-[600px]'} overflow-hidden cursor-pointer select-none`}
 						onClick={handleClick}
 						onTouchStart={handleTouchStart}
 					>
@@ -290,19 +356,6 @@ export default function StoriesViewer({
 							variant="ghost"
 							size="icon"
 							className="bg-black/40 backdrop-blur-sm hover:bg-black/60 text-white border-0 h-10 w-10"
-							onClick={togglePlayPause}
-						>
-							{isPlaying ? (
-								<Pause className="h-5 w-5" />
-							) : (
-								<Play className="h-5 w-5" />
-							)}
-						</Button>
-
-						<Button
-							variant="ghost"
-							size="icon"
-							className="bg-black/40 backdrop-blur-sm hover:bg-black/60 text-white border-0 h-10 w-10"
 							onClick={toggleMute}
 						>
 							{isMuted ? (
@@ -313,51 +366,28 @@ export default function StoriesViewer({
 						</Button>
 					</div>
 
-					{/* Navigation controls */}
-					<div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center space-x-4">
+					{/* Fullscreen button */}
+					<div className="absolute bottom-4 right-4 z-20">
 						<Button
 							variant="ghost"
 							size="icon"
 							className="bg-black/40 backdrop-blur-sm hover:bg-black/60 text-white border-0 h-10 w-10"
-							onClick={goToPrevious}
+							onClick={toggleFullscreen}
 						>
-							<SkipBack className="h-5 w-5" />
-						</Button>
-
-						<Button
-							variant="ghost"
-							size="icon"
-							className="bg-black/40 backdrop-blur-sm hover:bg-black/60 text-white border-0 h-10 w-10"
-							onClick={togglePause}
-						>
-							{isPaused ? (
-								<Play className="h-5 w-5" />
+							{isFullscreen ? (
+								<Minimize className="h-5 w-5" />
 							) : (
-								<Pause className="h-5 w-5" />
+								<Maximize className="h-5 w-5" />
 							)}
 						</Button>
-
-						<Button
-							variant="ghost"
-							size="icon"
-							className="bg-black/40 backdrop-blur-sm hover:bg-black/60 text-white border-0 h-10 w-10"
-							onClick={goToNext}
-						>
-							<SkipForward className="h-5 w-5" />
-						</Button>
 					</div>
 
-					{/* Story counter */}
-					<div className="absolute bottom-4 right-4 z-20">
-						<div className="bg-black/40 backdrop-blur-sm rounded-full px-3 py-1 text-white text-sm">
-							{currentIndex + 1} / {images.length}
-						</div>
-					</div>
+
 
 					{/* Audio element */}
 					<audio ref={audioRef} src={musicUrl} />
-				</CardContent>
-			</Card>
+				</div>
+			</div>
 		</div>
 	);
 }
