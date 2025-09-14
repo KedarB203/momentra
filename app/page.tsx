@@ -94,7 +94,13 @@ export default function Home() {
 	}, []);
 
 	return (
-		<div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-accent/5">
+		<div className="min-h-screen flex flex-col relative">
+			{/* Top half background */}
+			<div className="absolute top-0 left-0 right-0 h-1/2 bg-white"></div>
+			{/* Bottom half background */}
+			<div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-br from-background via-background to-accent/5"></div>
+			{/* Content wrapper */}
+			<div className="relative z-10 flex flex-col min-h-screen">
 			<Header />
 
 			<main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -118,11 +124,23 @@ export default function Home() {
 						</Card>
 					</div>
 				) : photos.length > 0 ? (
-					<StoriesViewer photos={photos} autoAdvanceTime={4000} />
+					<>
+						{/* Gleeful header text */}
+						<div className="text-center mb-8">
+							<h1 className="text-3xl md:text-4xl font-bold text-primary mb-2">
+							Tinu's Daily  Chronicles :p
+							</h1>
+							<p className="text-sm md:text-base text-muted-foreground mt-2 italic">
+								Warning: May contain excessive amounts of awesomeness and spontaneous smiling 😄
+							</p>
+						</div>
+						<StoriesViewer photos={photos} autoAdvanceTime={4000} />
+					</>
 				) : null}
 			</main>
 
 			<Footer />
+			</div>
 		</div>
 	);
 }
