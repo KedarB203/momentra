@@ -121,9 +121,16 @@ export default function Home() {
 						<>
 							{/* Gleeful header text */}
 							<div className="text-center mb-8">
-								<h1 className="text-3xl md:text-4xl font-bold text-primary mb-2">
-									Tinu&apos;s Daily Chronicles :p
-								</h1>
+								<div className="flex items-center justify-center gap-4 mb-2">
+									<img 
+										src="/tinu.jpeg" 
+										alt="Tinu's Profile" 
+										className="w-12 h-12 md:w-16 md:h-16 rounded-full object-cover border-2 border-primary/20 shadow-lg"
+									/>
+									<h1 className="text-3xl md:text-4xl font-bold text-primary">
+										Tinu&apos;s Daily Chronicles :p
+									</h1>
+								</div>
 								<p className="text-sm md:text-base text-muted-foreground mt-2 italic">
 									Warning: May contain excessive amounts of awesomeness and
 									spontaneous smiling 😄
