@@ -4,13 +4,34 @@ import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import StoriesViewer from "@/components/StoriesViewer";
-import { supabase, type PhotoRecord } from "@/lib/supabase";
+import { supabase, type PhotoRecord, getRandomCardImage } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function Home() {
 	const [photos, setPhotos] = useState<PhotoRecord[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+
+	// Function to process photos and add card images before each photo
+	const processPhotosWithCards = (originalPhotos: PhotoRecord[]): PhotoRecord[] => {
+		const processedPhotos: PhotoRecord[] = [];
+		
+		originalPhotos.forEach((photo, index) => {
+			// Add a card image before each photo
+			const cardPhoto: PhotoRecord = {
+				id: `card-${photo.id}`,
+				image_url: getRandomCardImage(),
+				music_url: photo.music_url, // Use the same music as the following photo
+				card_image: getRandomCardImage(),
+				created_at: photo.created_at
+			};
+			
+			processedPhotos.push(cardPhoto);
+			processedPhotos.push(photo);
+		});
+		
+		return processedPhotos;
+	};
 
 	// Fallback data for demonstration
 	const fallbackData: PhotoRecord[] = [
@@ -57,13 +78,13 @@ export default function Home() {
 
 				if (error) {
 					console.warn("Supabase error, using fallback data:", error.message);
-					setPhotos(fallbackData);
+					setPhotos(processPhotosWithCards(fallbackData));
 				} else {
-					setPhotos(data || fallbackData);
+					setPhotos(processPhotosWithCards(data || fallbackData));
 				}
 			} catch (err) {
 				console.warn("Failed to fetch data, using fallback:", err);
-				setPhotos(fallbackData);
+				setPhotos(processPhotosWithCards(fallbackData));
 			} finally {
 				setLoading(false);
 			}

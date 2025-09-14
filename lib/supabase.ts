@@ -8,8 +8,17 @@ const supabaseAnonKey =
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export interface PhotoRecord {
-	id: number;
+	id: number | string;
 	image_url: string;
 	music_url: string;
 	created_at?: string;
+	card_image?: string;
+}
+
+// Available card images in the public directory
+const cardImages = ['/grayCard.png', '/pinkCard.png', '/redCard.jpg'];
+
+// Utility function to get a random card image
+export function getRandomCardImage(): string {
+	return cardImages[Math.floor(Math.random() * cardImages.length)];
 }

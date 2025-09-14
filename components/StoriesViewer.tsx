@@ -10,10 +10,11 @@ interface StoriesViewerProps {
 }
 
 interface PhotoRecord {
-	id: number;
+	id: number | string;
 	image_url: string;
 	music_url: string;
 	created_at?: string;
+	card_image?: string;
 }
 
 export default function StoriesViewer({
