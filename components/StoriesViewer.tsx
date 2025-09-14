@@ -107,6 +107,7 @@ export default function StoriesViewer({
 	const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 	const autoAdvanceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const startTimeRef = useRef<number>(0);
+	const goToNextRef = useRef<() => void>(() => {});
 
 	// Initialize audio and start playing by default
 	useEffect(() => {
@@ -176,7 +177,7 @@ export default function StoriesViewer({
 		}, 50);
 
 		autoAdvanceTimeoutRef.current = setTimeout(() => {
-			goToNext();
+			goToNextRef.current?.();
 		}, duration);
 	}, [autoAdvanceTime, isPaused, photos, currentIndex]);
 
@@ -212,7 +213,7 @@ export default function StoriesViewer({
 		}, 50);
 
 		autoAdvanceTimeoutRef.current = setTimeout(() => {
-			goToNext();
+			goToNextRef.current?.();
 		}, remainingTime);
 	}, [autoAdvanceTime, progress, isPaused, photos, currentIndex]);
 
@@ -236,6 +237,11 @@ export default function StoriesViewer({
 			setIsTransitioning(false);
 		}, 150);
 	}, [photos.length, isTransitioning, stopProgress, currentIndex]);
+
+	// Update ref when goToNext changes
+	useEffect(() => {
+		goToNextRef.current = goToNext;
+	}, [goToNext]);
 
 	const goToPrevious = useCallback(() => {
 		if (isTransitioning) return;
@@ -304,7 +310,12 @@ export default function StoriesViewer({
 		try {
 			if (!isFullscreen) {
 				// Enter fullscreen - try different APIs for mobile compatibility
-				const element = containerRef.current as any;
+				const element = containerRef.current as HTMLElement & {
+					webkitRequestFullscreen?: () => Promise<void>;
+					webkitRequestFullScreen?: () => Promise<void>;
+					mozRequestFullScreen?: () => Promise<void>;
+					msRequestFullscreen?: () => Promise<void>;
+				};
 				
 				if (element.requestFullscreen) {
 					await element.requestFullscreen();
@@ -334,7 +345,12 @@ export default function StoriesViewer({
 				}
 			} else {
 				// Exit fullscreen
-				const doc = document as any;
+				const doc = document as Document & {
+					webkitExitFullscreen?: () => Promise<void>;
+					webkitCancelFullScreen?: () => Promise<void>;
+					mozCancelFullScreen?: () => Promise<void>;
+					msExitFullscreen?: () => Promise<void>;
+				};
 				
 				if (doc.exitFullscreen) {
 					await doc.exitFullscreen();
@@ -364,7 +380,12 @@ export default function StoriesViewer({
 	// Listen for fullscreen changes
 	useEffect(() => {
 		const handleFullscreenChange = () => {
-			const doc = document as any;
+			const doc = document as Document & {
+				webkitFullscreenElement?: Element | null;
+				webkitCurrentFullScreenElement?: Element | null;
+				mozFullScreenElement?: Element | null;
+				msFullscreenElement?: Element | null;
+			};
 
 			const isCurrentlyFullscreen = !!(
 				doc.fullscreenElement ||
@@ -579,7 +600,7 @@ export default function StoriesViewer({
 							<div className="absolute inset-0 flex items-center justify-center z-15 bg-black/40 backdrop-blur-sm">
 								<div className="flex flex-col items-center space-y-4">
 									<div className="text-white text-4xl font-bold mb-4">
-										That's a wrap! 🎬
+										That&apos;s a wrap! 🎬
 									</div>
 									<div className="flex space-x-4">
 										<Button

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import StoriesViewer from "@/components/StoriesViewer";
@@ -10,15 +10,14 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function Home() {
 	const [photos, setPhotos] = useState<PhotoRecord[]>([]);
 	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
 
 	// Function to process photos and add card images before each photo
-	const processPhotosWithCards = (
+	const processPhotosWithCards = useCallback((
 		originalPhotos: PhotoRecord[]
 	): PhotoRecord[] => {
 		const processedPhotos: PhotoRecord[] = [];
 
-		originalPhotos.forEach((photo, index) => {
+		originalPhotos.forEach((photo) => {
 			// Add a card image before each photo
 			const cardPhoto: PhotoRecord = {
 				id: `card-${photo.id}`,
@@ -34,10 +33,10 @@ export default function Home() {
 		});
 
 		return processedPhotos;
-	};
+	}, []);
 
 	// Fallback data for demonstration
-	const fallbackData: PhotoRecord[] = [
+	const fallbackData = useMemo<PhotoRecord[]>(() => [
 		{
 			id: 1,
 			image_url:
@@ -68,7 +67,7 @@ export default function Home() {
 				"https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&q=80",
 			music_url: "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3",
 		},
-	];
+	], []);
 
 	useEffect(() => {
 		async function fetchPhotos() {
@@ -94,7 +93,7 @@ export default function Home() {
 		}
 
 		fetchPhotos();
-	}, []);
+	}, [fallbackData, processPhotosWithCards]);
 
 	return (
 		<div className="min-h-screen flex flex-col relative">
@@ -115,14 +114,6 @@ export default function Home() {
 									<p className="text-muted-foreground">
 										Loading today&apos;s moments...
 									</p>
-								</CardContent>
-							</Card>
-						</div>
-					) : error ? (
-						<div className="flex justify-center items-center h-96">
-							<Card className="w-full max-w-md border-destructive/50">
-								<CardContent className="flex flex-col items-center justify-center p-8">
-									<p className="text-destructive text-center">{error}</p>
 								</CardContent>
 							</Card>
 						</div>
