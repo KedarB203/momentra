@@ -8,7 +8,7 @@ export default function Footer() {
 							Momentra
 						</h3>
 						<p className="text-sm text-muted-foreground">
-							Capturing life's beautiful moments through images and music.
+							Capturing life&apos;s beautiful moments through images and music.
 						</p>
 					</div>
 

@@ -202,19 +202,33 @@ export default function StoriesViewer({
 				// Enter fullscreen
 				if (containerRef.current.requestFullscreen) {
 					await containerRef.current.requestFullscreen();
-				} else if ((containerRef.current as any).webkitRequestFullscreen) {
-					await (containerRef.current as any).webkitRequestFullscreen();
-				} else if ((containerRef.current as any).msRequestFullscreen) {
-					await (containerRef.current as any).msRequestFullscreen();
+				} else {
+					const element = containerRef.current as unknown as {
+						webkitRequestFullscreen?: () => Promise<void>;
+						msRequestFullscreen?: () => Promise<void>;
+					};
+
+					if (element.webkitRequestFullscreen) {
+						await element.webkitRequestFullscreen();
+					} else if (element.msRequestFullscreen) {
+						await element.msRequestFullscreen();
+					}
 				}
 			} else {
 				// Exit fullscreen
 				if (document.exitFullscreen) {
 					await document.exitFullscreen();
-				} else if ((document as any).webkitExitFullscreen) {
-					await (document as any).webkitExitFullscreen();
-				} else if ((document as any).msExitFullscreen) {
-					await (document as any).msExitFullscreen();
+				} else {
+					const doc = document as unknown as {
+						webkitExitFullscreen?: () => Promise<void>;
+						msExitFullscreen?: () => Promise<void>;
+					};
+
+					if (doc.webkitExitFullscreen) {
+						await doc.webkitExitFullscreen();
+					} else if (doc.msExitFullscreen) {
+						await doc.msExitFullscreen();
+					}
 				}
 			}
 		} catch (error) {
@@ -225,10 +239,15 @@ export default function StoriesViewer({
 	// Listen for fullscreen changes
 	useEffect(() => {
 		const handleFullscreenChange = () => {
+			const doc = document as unknown as {
+				webkitFullscreenElement?: Element | null;
+				msFullscreenElement?: Element | null;
+			};
+
 			const isCurrentlyFullscreen = !!(
 				document.fullscreenElement ||
-				(document as any).webkitFullscreenElement ||
-				(document as any).msFullscreenElement
+				doc.webkitFullscreenElement ||
+				doc.msFullscreenElement
 			);
 			setIsFullscreen(isCurrentlyFullscreen);
 		};
@@ -294,8 +313,15 @@ export default function StoriesViewer({
 		>
 			<div
 				className={`overflow-hidden border-0 ${
-					isFullscreen ? "rounded-none h-full" : "rounded-lg shadow-xl"
+					isFullscreen
+						? "rounded-none h-full"
+						: "rounded-lg shadow-2xl border-2 border-primary/20"
 				}`}
+				style={{
+					boxShadow: isFullscreen
+						? "none"
+						: "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)",
+				}}
 			>
 				<div className="relative">
 					{/* Progress indicators */}

@@ -83,7 +83,7 @@ export default function Home() {
 							<CardContent className="flex flex-col items-center justify-center p-8">
 								<div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
 								<p className="text-muted-foreground">
-									Loading today's moments...
+									Loading today&apos;s moments...
 								</p>
 							</CardContent>
 						</Card>
