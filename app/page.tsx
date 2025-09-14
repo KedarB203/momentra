@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ImageCarousel from "@/components/ImageCarousel";
+import ImageAnalyzer from "@/components/ImageAnalyzer";
 import { supabase, type DayRecord } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -11,6 +12,7 @@ export default function Home() {
 	const [dayData, setDayData] = useState<DayRecord | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
 	// Fallback data for demonstration
 	const fallbackData: DayRecord = {
@@ -29,6 +31,7 @@ export default function Home() {
 		async function fetchDayData() {
 			try {
 				setLoading(true);
+				console.log("🔄 Attempting to fetch data from Supabase...");
 				const { data, error } = await supabase
 					.from("days")
 					.select("*")
@@ -37,12 +40,15 @@ export default function Home() {
 
 				if (error) {
 					console.warn("Supabase error, using fallback data:", error.message);
+					console.log("📊 Using fallback data:", fallbackData);
 					setDayData(fallbackData);
 				} else {
+					console.log("✅ Supabase data fetched successfully:", data);
 					setDayData(data);
 				}
 			} catch (err) {
 				console.warn("Failed to fetch data, using fallback:", err);
+				console.log("📊 Using fallback data due to error:", fallbackData);
 				setDayData(fallbackData);
 			} finally {
 				setLoading(false);
@@ -87,10 +93,17 @@ export default function Home() {
 						</Card>
 					</div>
 				) : dayData ? (
-					<ImageCarousel
-						images={dayData.image_urls}
-						musicUrl={dayData.music_url}
-					/>
+					<>
+						<ImageCarousel
+							images={dayData.image_urls}
+							musicUrl={dayData.music_url}
+							onImageChange={setCurrentImageIndex}
+						/>
+						<ImageAnalyzer 
+							dayRecord={dayData} 
+							currentImageIndex={currentImageIndex}
+						/>
+					</>
 				) : null}
 
 				<div className="mt-16 text-center">

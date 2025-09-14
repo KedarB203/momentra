@@ -17,11 +17,13 @@ import {
 interface ImageCarouselProps {
 	images: string[];
 	musicUrl: string;
+	onImageChange?: (index: number) => void;
 }
 
 export default function ImageCarousel({
 	images,
 	musicUrl,
+	onImageChange,
 }: ImageCarouselProps) {
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [isMuted, setIsMuted] = useState(false);
@@ -41,6 +43,25 @@ export default function ImageCarousel({
 			audioRef.current.volume = 0.6;
 		}
 	}, []);
+
+	// Track carousel slide changes
+	useEffect(() => {
+		if (emblaApi && onImageChange) {
+			const onSelect = () => {
+				const selectedIndex = emblaApi.selectedScrollSnap();
+				onImageChange(selectedIndex);
+			};
+			
+			emblaApi.on('select', onSelect);
+			
+			// Call immediately to set initial index
+			onSelect();
+			
+			return () => {
+				emblaApi.off('select', onSelect);
+			};
+		}
+	}, [emblaApi, onImageChange]);
 
 	const togglePlayPause = () => {
 		if (audioRef.current) {
