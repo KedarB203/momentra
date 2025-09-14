@@ -2,23 +2,22 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import {
-	Play,
-	Volume2,
-	VolumeX,
-	Maximize,
-	Minimize,
-} from "lucide-react";
+import { Play, Volume2, VolumeX, Maximize, Minimize } from "lucide-react";
 
 interface StoriesViewerProps {
-	images: string[];
-	musicUrl: string;
+	photos: PhotoRecord[];
 	autoAdvanceTime?: number; // in milliseconds
 }
 
+interface PhotoRecord {
+	id: number;
+	image_url: string;
+	music_url: string;
+	created_at?: string;
+}
+
 export default function StoriesViewer({
-	images,
-	musicUrl,
+	photos,
 	autoAdvanceTime = 5000,
 }: StoriesViewerProps) {
 	const [currentIndex, setCurrentIndex] = useState(0);
@@ -42,12 +41,12 @@ export default function StoriesViewer({
 			audioRef.current.muted = false;
 			// Try to start playing audio unmuted
 			audioRef.current.play().catch((error) => {
-				console.log('Unmuted autoplay prevented, trying muted:', error);
+				console.log("Unmuted autoplay prevented, trying muted:", error);
 				// If unmuted autoplay fails, try with muted
 				if (audioRef.current) {
 					audioRef.current.muted = true;
 					audioRef.current.play().catch((mutedError) => {
-						console.log('All autoplay prevented:', mutedError);
+						console.log("All autoplay prevented:", mutedError);
 						setIsMuted(true);
 					});
 				}
@@ -55,13 +54,29 @@ export default function StoriesViewer({
 		}
 	}, []);
 
+	// Update music when photo changes
+	useEffect(() => {
+		if (photos.length > 0 && audioRef.current) {
+			const currentPhoto = photos[currentIndex];
+			audioRef.current.src = currentPhoto.music_url;
+			audioRef.current.load();
+
+			// Try to play the new track
+			if (!isMuted) {
+				audioRef.current.play().catch((error) => {
+					console.log("Failed to play new track:", error);
+				});
+			}
+		}
+	}, [currentIndex, photos, isMuted]);
+
 	// Progress tracking
 	const startProgress = useCallback(() => {
 		if (isPaused) return;
-		
+
 		startTimeRef.current = Date.now();
 		setProgress(0);
-		
+
 		progressIntervalRef.current = setInterval(() => {
 			const elapsed = Date.now() - startTimeRef.current;
 			const newProgress = Math.min((elapsed / autoAdvanceTime) * 100, 100);
@@ -90,10 +105,10 @@ export default function StoriesViewer({
 
 	const resumeProgress = useCallback(() => {
 		if (isPaused) return;
-		
+
 		const remainingTime = autoAdvanceTime * (1 - progress / 100);
-		startTimeRef.current = Date.now() - (autoAdvanceTime * (progress / 100));
-		
+		startTimeRef.current = Date.now() - autoAdvanceTime * (progress / 100);
+
 		progressIntervalRef.current = setInterval(() => {
 			const elapsed = Date.now() - startTimeRef.current;
 			const newProgress = Math.min((elapsed / autoAdvanceTime) * 100, 100);
@@ -108,22 +123,22 @@ export default function StoriesViewer({
 	// Navigation functions
 	const goToNext = useCallback(() => {
 		if (isTransitioning) return;
-		
+
 		setIsTransitioning(true);
 		stopProgress();
-		
+
 		setTimeout(() => {
-			setCurrentIndex((prev) => (prev + 1) % images.length);
+			setCurrentIndex((prev) => (prev + 1) % photos.length);
 			setIsTransitioning(false);
 		}, 150);
-	}, [images.length, isTransitioning, stopProgress]);
+	}, [photos.length, isTransitioning, stopProgress]);
 
 	const goToPrevious = useCallback(() => {
 		if (isTransitioning) return;
-		
+
 		setIsTransitioning(true);
 		stopProgress();
-		
+
 		setTimeout(() => {
 			// If on first story (index 0), stay on first story
 			if (currentIndex === 0) {
@@ -135,29 +150,31 @@ export default function StoriesViewer({
 		}, 150);
 	}, [currentIndex, isTransitioning, stopProgress]);
 
-	const goToStory = useCallback((index: number) => {
-		if (isTransitioning || index === currentIndex) return;
-		
-		setIsTransitioning(true);
-		stopProgress();
-		
-		setTimeout(() => {
-			setCurrentIndex(index);
-			setIsTransitioning(false);
-		}, 150);
-	}, [currentIndex, isTransitioning, stopProgress]);
+	const goToStory = useCallback(
+		(index: number) => {
+			if (isTransitioning || index === currentIndex) return;
+
+			setIsTransitioning(true);
+			stopProgress();
+
+			setTimeout(() => {
+				setCurrentIndex(index);
+				setIsTransitioning(false);
+			}, 150);
+		},
+		[currentIndex, isTransitioning, stopProgress]
+	);
 
 	// Auto-advance logic
 	useEffect(() => {
 		if (!isPaused && !isTransitioning) {
 			startProgress();
 		}
-		
+
 		return () => {
 			stopProgress();
 		};
 	}, [currentIndex, isPaused, isTransitioning, startProgress, stopProgress]);
-
 
 	const toggleMute = () => {
 		if (audioRef.current) {
@@ -165,7 +182,7 @@ export default function StoriesViewer({
 				// Unmute and play
 				audioRef.current.muted = false;
 				audioRef.current.play().catch((error) => {
-					console.log('Play failed:', error);
+					console.log("Play failed:", error);
 				});
 				setIsMuted(false);
 			} else {
@@ -201,7 +218,7 @@ export default function StoriesViewer({
 				}
 			}
 		} catch (error) {
-			console.log('Fullscreen toggle failed:', error);
+			console.log("Fullscreen toggle failed:", error);
 		}
 	};
 
@@ -216,14 +233,20 @@ export default function StoriesViewer({
 			setIsFullscreen(isCurrentlyFullscreen);
 		};
 
-		document.addEventListener('fullscreenchange', handleFullscreenChange);
-		document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-		document.addEventListener('msfullscreenchange', handleFullscreenChange);
+		document.addEventListener("fullscreenchange", handleFullscreenChange);
+		document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+		document.addEventListener("msfullscreenchange", handleFullscreenChange);
 
 		return () => {
-			document.removeEventListener('fullscreenchange', handleFullscreenChange);
-			document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-			document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+			document.removeEventListener("fullscreenchange", handleFullscreenChange);
+			document.removeEventListener(
+				"webkitfullscreenchange",
+				handleFullscreenChange
+			);
+			document.removeEventListener(
+				"msfullscreenchange",
+				handleFullscreenChange
+			);
 		};
 	}, []);
 
@@ -245,7 +268,7 @@ export default function StoriesViewer({
 		const rect = e.currentTarget.getBoundingClientRect();
 		const x = e.clientX - rect.left;
 		const width = rect.width;
-		
+
 		if (x < width * 0.3) {
 			goToPrevious();
 		} else if (x > width * 0.7) {
@@ -263,28 +286,35 @@ export default function StoriesViewer({
 	}, [stopProgress]);
 
 	return (
-		<div 
+		<div
 			ref={containerRef}
-			className={`relative ${isFullscreen ? 'w-screen h-screen' : 'w-full max-w-md mx-auto'}`}
+			className={`relative ${
+				isFullscreen ? "w-screen h-screen" : "w-full max-w-md mx-auto"
+			}`}
 		>
-			<div className={`overflow-hidden border-0 ${isFullscreen ? 'rounded-none h-full' : 'rounded-lg shadow-xl'}`}>
+			<div
+				className={`overflow-hidden border-0 ${
+					isFullscreen ? "rounded-none h-full" : "rounded-lg shadow-xl"
+				}`}
+			>
 				<div className="relative">
 					{/* Progress indicators */}
 					<div className="absolute top-0 left-0 right-0 z-20 flex gap-1 p-4">
-						{images.map((_, index) => (
+						{photos.map((photo, index) => (
 							<div
-								key={index}
+								key={photo.id}
 								className="flex-1 h-1 bg-white/30 rounded-full overflow-hidden cursor-pointer"
 								onClick={() => goToStory(index)}
 							>
 								<div
 									className="h-full bg-white rounded-full transition-all duration-100 ease-linear"
 									style={{
-										width: index === currentIndex 
-											? `${progress}%` 
-											: index < currentIndex 
-												? '100%' 
-												: '0%'
+										width:
+											index === currentIndex
+												? `${progress}%`
+												: index < currentIndex
+												? "100%"
+												: "0%",
 									}}
 								/>
 							</div>
@@ -292,24 +322,27 @@ export default function StoriesViewer({
 					</div>
 
 					{/* Main story content */}
-					<div 
-						className={`relative ${isFullscreen ? 'h-screen' : 'h-[80vh] min-h-[600px]'} overflow-hidden cursor-pointer select-none`}
+					<div
+						className={`relative ${
+							isFullscreen ? "h-screen" : "h-[80vh] min-h-[600px]"
+						} overflow-hidden cursor-pointer select-none`}
 						onClick={handleClick}
 						onTouchStart={handleTouchStart}
 					>
 						{/* Background image with transition */}
-						<div 
+						<div
 							className={`absolute inset-0 transition-opacity duration-300 ${
-								isTransitioning ? 'opacity-0' : 'opacity-100'
+								isTransitioning ? "opacity-0" : "opacity-100"
 							}`}
 						>
 							<img
-								src={images[currentIndex]}
-								alt={`Story ${currentIndex + 1}`}
+								src={photos[currentIndex]?.image_url}
+								alt={`Photo ${photos[currentIndex]?.id}`}
 								className="w-full h-full object-cover"
 								onError={(e) => {
 									const target = e.target as HTMLImageElement;
-									target.src = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80";
+									target.src =
+										"https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80";
 								}}
 							/>
 							<div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
@@ -317,21 +350,21 @@ export default function StoriesViewer({
 
 						{/* Touch zones for navigation (invisible) */}
 						<div className="absolute inset-0 flex">
-							<div 
+							<div
 								className="flex-1 z-10"
 								onClick={(e) => {
 									e.stopPropagation();
 									goToPrevious();
 								}}
 							/>
-							<div 
+							<div
 								className="flex-1 z-10"
 								onClick={(e) => {
 									e.stopPropagation();
 									togglePause();
 								}}
 							/>
-							<div 
+							<div
 								className="flex-1 z-10"
 								onClick={(e) => {
 									e.stopPropagation();
@@ -382,10 +415,8 @@ export default function StoriesViewer({
 						</Button>
 					</div>
 
-
-
 					{/* Audio element */}
-					<audio ref={audioRef} src={musicUrl} />
+					<audio ref={audioRef} />
 				</div>
 			</div>
 		</div>

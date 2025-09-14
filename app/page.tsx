@@ -4,52 +4,72 @@ import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import StoriesViewer from "@/components/StoriesViewer";
-import { supabase, type DayRecord } from "@/lib/supabase";
+import { supabase, type PhotoRecord } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function Home() {
-	const [dayData, setDayData] = useState<DayRecord | null>(null);
+	const [photos, setPhotos] = useState<PhotoRecord[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
 	// Fallback data for demonstration
-	const fallbackData: DayRecord = {
-		id: 1,
-		image_urls: [
-			"https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
-			"https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80",
-			"https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800&q=80",
-			"https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=800&q=80",
-			"https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&q=80",
-		],
-		music_url: "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3",
-	};
+	const fallbackData: PhotoRecord[] = [
+		{
+			id: 1,
+			image_url:
+				"https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
+			music_url: "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3",
+		},
+		{
+			id: 2,
+			image_url:
+				"https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80",
+			music_url: "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3",
+		},
+		{
+			id: 3,
+			image_url:
+				"https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800&q=80",
+			music_url: "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3",
+		},
+		{
+			id: 4,
+			image_url:
+				"https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=800&q=80",
+			music_url: "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3",
+		},
+		{
+			id: 5,
+			image_url:
+				"https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&q=80",
+			music_url: "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3",
+		},
+	];
 
 	useEffect(() => {
-		async function fetchDayData() {
+		async function fetchPhotos() {
 			try {
 				setLoading(true);
 				const { data, error } = await supabase
-					.from("days")
+					.from("photos")
 					.select("*")
-					.limit(1)
-					.single();
+					.order("created_at", { ascending: true });
 
 				if (error) {
 					console.warn("Supabase error, using fallback data:", error.message);
-					setDayData(fallbackData);
+					setPhotos(fallbackData);
 				} else {
-					setDayData(data);
+					setPhotos(data || fallbackData);
 				}
 			} catch (err) {
 				console.warn("Failed to fetch data, using fallback:", err);
-				setDayData(fallbackData);
+				setPhotos(fallbackData);
 			} finally {
 				setLoading(false);
 			}
 		}
 
-		fetchDayData();
+		fetchPhotos();
 	}, []);
 
 	return (
@@ -57,16 +77,6 @@ export default function Home() {
 			<Header />
 
 			<main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-				<div className="text-center mb-12">
-					<h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-						Today's Moments
-					</h1>
-					<p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-						Immerse yourself in life's moments through an interactive story-like experience
-						with curated visuals and ambient sounds
-					</p>
-				</div>
-
 				{loading ? (
 					<div className="flex justify-center items-center h-96">
 						<Card className="w-full max-w-md">
@@ -86,28 +96,9 @@ export default function Home() {
 							</CardContent>
 						</Card>
 					</div>
-				) : dayData ? (
-					<StoriesViewer
-						images={dayData.image_urls}
-						musicUrl={dayData.music_url}
-						autoAdvanceTime={4000}
-					/>
+				) : photos.length > 0 ? (
+					<StoriesViewer photos={photos} autoAdvanceTime={4000} />
 				) : null}
-
-				<div className="mt-16 text-center">
-					<Card className="max-w-2xl mx-auto bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
-						<CardContent className="p-8">
-							<h2 className="text-2xl font-semibold mb-4 text-foreground">
-								Immerse Yourself
-							</h2>
-							<p className="text-muted-foreground">
-								Tap to navigate, hold to pause, and let the ambient music transport you 
-								through beautiful imagery. Each story unfolds at your pace, creating 
-								moments of peace and reflection.
-							</p>
-						</CardContent>
-					</Card>
-				</div>
 			</main>
 
 			<Footer />

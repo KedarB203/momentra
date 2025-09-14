@@ -7,9 +7,9 @@ const supabaseAnonKey =
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-export interface DayRecord {
+export interface PhotoRecord {
 	id: number;
-	image_urls: string[];
+	image_url: string;
 	music_url: string;
 	created_at?: string;
 }

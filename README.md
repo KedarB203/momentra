@@ -30,12 +30,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 
 ### 3. Supabase Database Setup
 
-Create a table called `days` in your Supabase database with the following structure:
+Create a table called `photos` in your Supabase database with the following structure:
 
 ```sql
-CREATE TABLE days (
+CREATE TABLE photos (
   id SERIAL PRIMARY KEY,
-  image_urls TEXT[],
+  image_url TEXT,
   music_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -44,15 +44,10 @@ CREATE TABLE days (
 Example data:
 
 ```sql
-INSERT INTO days (image_urls, music_url) VALUES
-(
-  ARRAY[
-    'https://example.com/image1.jpg',
-    'https://example.com/image2.jpg',
-    'https://example.com/image3.jpg'
-  ],
-  'https://example.com/background-music.mp3'
-);
+INSERT INTO photos (image_url, music_url) VALUES
+('https://example.com/image1.jpg', 'https://example.com/music1.mp3'),
+('https://example.com/image2.jpg', 'https://example.com/music2.mp3'),
+('https://example.com/image3.jpg', 'https://example.com/music3.mp3');
 ```
 
 ### 4. Run the Development Server
