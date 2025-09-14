@@ -13,6 +13,7 @@ export interface PhotoRecord {
 	music_url: string;
 	created_at?: string;
 	card_image?: string;
+	image_label_claude?: string;
 }
 
 // Available card images in the public directory

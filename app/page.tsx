@@ -26,6 +26,7 @@ export default function Home() {
 				music_url: photo.music_url, // Use the same music as the following photo
 				card_image: getRandomCardImage(),
 				created_at: photo.created_at,
+				image_label_claude: photo.image_label_claude, // Pass the label from the photo it precedes
 			};
 
 			processedPhotos.push(cardPhoto);

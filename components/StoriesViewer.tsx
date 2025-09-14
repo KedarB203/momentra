@@ -4,6 +4,78 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Volume2, VolumeX, Maximize, Minimize } from "lucide-react";
 
+// Typewriter component for animated text
+interface TypewriterTextProps {
+	text: string;
+	cardImage: string;
+	className?: string;
+	speed?: number;
+}
+
+function TypewriterText({ text, cardImage, className = "", speed = 50 }: TypewriterTextProps) {
+	const [displayText, setDisplayText] = useState("");
+	const [currentIndex, setCurrentIndex] = useState(0);
+
+	useEffect(() => {
+		// Reset when text changes
+		setDisplayText("");
+		setCurrentIndex(0);
+	}, [text]);
+
+	useEffect(() => {
+		if (currentIndex < text.length) {
+			const timeout = setTimeout(() => {
+				setDisplayText(prev => prev + text[currentIndex]);
+				setCurrentIndex(prev => prev + 1);
+			}, speed);
+
+			return () => clearTimeout(timeout);
+		}
+	}, [currentIndex, text, speed]);
+
+	// Determine text color based on card image
+	const getTextColor = () => {
+		if (cardImage.includes('grayCard')) {
+			return 'text-black';
+		} else if (cardImage.includes('redCard')) {
+			return 'text-white';
+		} else if (cardImage.includes('pinkCard')) {
+			return 'bg-gradient-to-r from-pink-400 via-pink-500 to-pink-600 bg-clip-text text-transparent';
+		}
+		return 'text-white'; // default
+	};
+
+	const textColorClass = getTextColor();
+
+	return (
+		<p 
+			className={`${className} ${textColorClass}`}
+			style={{
+				animation: 'fadeInUp 0.8s ease-out',
+			}}
+		>
+			{displayText}
+			{currentIndex < text.length && (
+				<span className="animate-pulse">|</span>
+			)}
+			<style dangerouslySetInnerHTML={{
+				__html: `
+					@keyframes fadeInUp {
+						from { 
+							opacity: 0; 
+							transform: translateY(30px); 
+						}
+						to { 
+							opacity: 1; 
+							transform: translateY(0); 
+						}
+					}
+				`
+			}} />
+		</p>
+	);
+}
+
 interface StoriesViewerProps {
 	photos: PhotoRecord[];
 	autoAdvanceTime?: number; // in milliseconds
@@ -15,6 +87,7 @@ interface PhotoRecord {
 	music_url: string;
 	created_at?: string;
 	card_image?: string;
+	image_label_claude?: string;
 }
 
 export default function StoriesViewer({
@@ -75,19 +148,23 @@ export default function StoriesViewer({
 	const startProgress = useCallback(() => {
 		if (isPaused) return;
 
+		// Determine if current photo is a card (5 seconds) or regular photo (default time)
+		const isCard = photos[currentIndex]?.id?.toString().startsWith('card-');
+		const duration = isCard ? 5000 : autoAdvanceTime;
+
 		startTimeRef.current = Date.now();
 		setProgress(0);
 
 		progressIntervalRef.current = setInterval(() => {
 			const elapsed = Date.now() - startTimeRef.current;
-			const newProgress = Math.min((elapsed / autoAdvanceTime) * 100, 100);
+			const newProgress = Math.min((elapsed / duration) * 100, 100);
 			setProgress(newProgress);
 		}, 50);
 
 		autoAdvanceTimeoutRef.current = setTimeout(() => {
 			goToNext();
-		}, autoAdvanceTime);
-	}, [autoAdvanceTime, isPaused]);
+		}, duration);
+	}, [autoAdvanceTime, isPaused, photos, currentIndex]);
 
 	const stopProgress = useCallback(() => {
 		if (progressIntervalRef.current) {
@@ -107,19 +184,23 @@ export default function StoriesViewer({
 	const resumeProgress = useCallback(() => {
 		if (isPaused) return;
 
-		const remainingTime = autoAdvanceTime * (1 - progress / 100);
-		startTimeRef.current = Date.now() - autoAdvanceTime * (progress / 100);
+		// Determine if current photo is a card (5 seconds) or regular photo (default time)
+		const isCard = photos[currentIndex]?.id?.toString().startsWith('card-');
+		const duration = isCard ? 5000 : autoAdvanceTime;
+
+		const remainingTime = duration * (1 - progress / 100);
+		startTimeRef.current = Date.now() - duration * (progress / 100);
 
 		progressIntervalRef.current = setInterval(() => {
 			const elapsed = Date.now() - startTimeRef.current;
-			const newProgress = Math.min((elapsed / autoAdvanceTime) * 100, 100);
+			const newProgress = Math.min((elapsed / duration) * 100, 100);
 			setProgress(newProgress);
 		}, 50);
 
 		autoAdvanceTimeoutRef.current = setTimeout(() => {
 			goToNext();
 		}, remainingTime);
-	}, [autoAdvanceTime, progress, isPaused]);
+	}, [autoAdvanceTime, progress, isPaused, photos, currentIndex]);
 
 	// Navigation functions
 	const goToNext = useCallback(() => {
@@ -373,6 +454,17 @@ export default function StoriesViewer({
 								}}
 							/>
 							<div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
+							
+							{/* Display label on card images with typing animation */}
+							{photos[currentIndex]?.id?.toString().startsWith('card-') && photos[currentIndex]?.image_label_claude && (
+								<div className="absolute inset-0 flex items-center justify-center z-10">
+									<TypewriterText 
+										text={photos[currentIndex]?.image_label_claude || ''} 
+										cardImage={photos[currentIndex]?.image_url || ''}
+										className="text-4xl font-bold text-center max-w-md mx-4 drop-shadow-lg"
+									/>
+								</div>
+							)}
 						</div>
 
 						{/* Touch zones for navigation (invisible) */}
