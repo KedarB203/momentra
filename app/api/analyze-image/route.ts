@@ -23,16 +23,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Image URL is required' }, { status: 400 });
     }
 
-    // Fetch image from the provided URL
+    // Validate that it's a JPEG URL
+    if (!imageUrl.toLowerCase().includes('.jpg') && !imageUrl.toLowerCase().includes('.jpeg')) {
+      console.log('⚠️ Warning: URL does not appear to be a JPEG image:', imageUrl);
+    }
+
+    // Fetch JPEG image from the provided URL
+    console.log('🖼️ Fetching JPEG image from URL:', imageUrl);
     const response = await fetch(imageUrl);
     if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.statusText}`);
+      throw new Error(`Failed to fetch JPEG image: ${response.statusText}`);
     }
 
     const imageBuffer = await response.arrayBuffer();
     const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+    
+    console.log('✅ JPEG image fetched successfully, size:', imageBuffer.byteLength, 'bytes');
 
-    // Call Claude API for image analysis
+    // Call Claude API for JPEG image analysis
+    console.log('🤖 Sending JPEG image to Claude for analysis...');
     const message = await anthropic.messages.create({
       model: "claude-opus-4-20250514",
       max_tokens: 1000,
@@ -42,14 +51,14 @@ export async function POST(request: NextRequest) {
           content: [
             {
               type: "text",
-              text: `Analyze this image and provide a detailed analysis in the following JSON format:
+              text: `Analyze this JPEG image and provide a detailed description in the following JSON format:
               {
-                "description": "A detailed description of what's in the image",
-                "objects": ["list", "of", "objects", "detected"],
-                "colors": ["dominant", "colors", "in", "the", "image"],
-                "mood": "overall mood or atmosphere",
-                "activities": ["activities", "or", "actions", "visible"],
-                "suggestions": ["suggestions", "for", "music", "or", "mood", "based", "on", "the", "image"]
+                "description": "A detailed description of what's in the JPEG image",
+                "objects": ["list", "of", "objects", "detected", "in", "the", "image"],
+                "colors": ["dominant", "colors", "in", "the", "JPEG", "image"],
+                "mood": "overall mood or atmosphere of the image",
+                "activities": ["activities", "or", "actions", "visible", "in", "the", "image"],
+                "suggestions": ["suggestions", "for", "music", "or", "mood", "based", "on", "the", "JPEG", "image"]
               }`
             },
             {
@@ -68,13 +77,14 @@ export async function POST(request: NextRequest) {
     const content = message.content[0];
     if (content.type === 'text') {
       const analysisText = content.text;
-      console.log('🤖 Raw Claude Response:', analysisText);
+      console.log('🤖 Raw Claude Response for JPEG:', analysisText);
       
       const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
       
       if (jsonMatch) {
         const parsedAnalysis = JSON.parse(jsonMatch[0]);
-        console.log('✅ Parsed Analysis:', parsedAnalysis);
+        console.log('✅ Parsed JPEG Analysis:', parsedAnalysis);
+        console.log('📝 JPEG Description:', parsedAnalysis.description);
         return NextResponse.json({ analysis: parsedAnalysis });
       } else {
         throw new Error('No valid JSON found in Claude response');

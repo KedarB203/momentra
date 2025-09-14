@@ -68,19 +68,23 @@ export default function ImageAnalyzer({ dayRecord, currentImageIndex = 0 }: Imag
 
   const handleAnalyze = async () => {
     if (!dayRecord?.image_urls || dayRecord.image_urls.length === 0) {
+      console.log('❌ No images available for analysis');
       setError('No images available for analysis');
       return;
     }
 
     const imageUrl = dayRecord.image_urls[currentImageIndex];
     if (!imageUrl) {
+      console.log('❌ No image at current index:', currentImageIndex);
       setError('No image at current index');
       return;
     }
 
-    console.log('🚀 Starting image analysis...');
+    console.log('🚀 STARTING IMMEDIATE IMAGE ANALYSIS - Supabase data ready!');
     console.log('📊 Current image index:', currentImageIndex);
     console.log('🔗 Image URL:', imageUrl);
+    console.log('📋 Image URL length:', imageUrl.length);
+    console.log('⚡ Analysis starting NOW...');
 
     setIsAnalyzing(true);
     setError(null);
@@ -122,7 +126,10 @@ export default function ImageAnalyzer({ dayRecord, currentImageIndex = 0 }: Imag
   // Auto-analyze when dayRecord or currentImageIndex changes
   useEffect(() => {
     if (dayRecord?.image_urls && dayRecord.image_urls.length > 0) {
-      console.log('🔄 Auto-triggering analysis for current image...');
+      console.log('🔄 IMMEDIATE ANALYSIS TRIGGERED - Supabase data loaded!');
+      console.log('📊 DayRecord loaded:', dayRecord);
+      console.log('🖼️ Total images available:', dayRecord.image_urls.length);
+      console.log('⚡ Starting analysis immediately...');
       handleAnalyze();
     }
   }, [dayRecord, currentImageIndex]);

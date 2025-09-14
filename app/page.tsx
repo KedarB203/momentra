@@ -42,14 +42,23 @@ export default function Home() {
 					console.warn("Supabase error, using fallback data:", error.message);
 					console.log("📊 Using fallback data:", fallbackData);
 					setDayData(fallbackData);
+					// Trigger immediate analysis - no delay
+					console.log("🚀 Triggering immediate analysis of first image...");
+					setCurrentImageIndex(0);
 				} else {
 					console.log("✅ Supabase data fetched successfully:", data);
 					setDayData(data);
+					// Trigger immediate analysis - no delay
+					console.log("🚀 Triggering immediate analysis of first image...");
+					setCurrentImageIndex(0);
 				}
 			} catch (err) {
 				console.warn("Failed to fetch data, using fallback:", err);
 				console.log("📊 Using fallback data due to error:", fallbackData);
 				setDayData(fallbackData);
+				// Trigger immediate analysis - no delay
+				console.log("🚀 Triggering immediate analysis of first image...");
+				setCurrentImageIndex(0);
 			} finally {
 				setLoading(false);
 			}
