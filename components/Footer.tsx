@@ -1,12 +1,24 @@
+import Image from "next/image";
+
 export default function Footer() {
 	return (
 		<footer className="w-full border-t bg-background">
 			<div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
 				<div className="grid grid-cols-1 md:grid-cols-4 gap-8">
 					<div className="space-y-3">
-						<h3 className="text-lg font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-							Momentra
-						</h3>
+						<div className="flex items-center space-x-2">
+							<Image
+								src="/logo.png"
+								alt="Momentra Logo"
+								width={32}
+								height={32}
+								className="rounded-md"
+								quality={100}
+							/>
+							<h3 className="text-lg font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+								Momentra
+							</h3>
+						</div>
 						<p className="text-sm text-muted-foreground">
 							Capturing life&apos;s beautiful moments through images and music.
 						</p>

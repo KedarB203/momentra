@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 export default function Header() {
 	return (
@@ -6,6 +7,15 @@ export default function Header() {
 			<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="flex h-16 items-center justify-between">
 					<div className="flex items-center space-x-4">
+						<Image
+							src="/logo.png"
+							alt="Momentra Logo"
+							width={40}
+							height={40}
+							className="rounded-md"
+							quality={100}
+							priority
+						/>
 						<h1 className="text-2xl font-bold text-primary">Momentra</h1>
 					</div>
 
